@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Vendedor{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2>Mi Dashboard</h2>
+        <hr>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h5 class="card-title">Recaudado Hoy</h5>
+                <h2>C$ {{ "%.2f"|format(current_user.daily_revenue) }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h5 class="card-title">Comisión Hoy</h5>
+                <h2>C$ {{ "%.2f"|format(current_user.daily_commission) }}</h2>
+                <small>{{ (current_user.vehicle_type == 'propio' and '30%' or '15%') }} de lo recaudado</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <h5 class="card-title">Aguinaldo (Hoy)</h5>
+                <h2>C$ {{ "%.2f"|format(current_user.daily_bonus_savings) }}</h2>
+                <small>1% de comisión</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark">
+            <div class="card-body">
+                <h5 class="card-title">Aguinaldo Acumulado</h5>
+                <h2>C$ {{ "%.2f"|format(current_user.total_bonus_accumulated) }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Ventas de Hoy</h5>
+                <a href="{{ url_for('seller_new_sale') }}" class="btn btn-sm btn-success">+ Nueva Venta</a>
+            </div>
+            <div class="card-body">
+                {% if sales_today %}
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Cliente</th>
+                            <th>Total</th>
+                            <th>Tipo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sale in sales_today %}
+                        <tr>
+                            <td>#{{ sale.id }}</td>
+                            <td>{{ sale.customer.name }}</td>
+                            <td>C$ {{ "%.2f"|format(sale.total) }}</td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if sale.sale_type == 'contado' else 'warning' }}">
+                                    {{ sale.sale_type|title }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="text-muted text-center">No hay ventas registradas hoy</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Cobros de Hoy</h5>
+                <a href="{{ url_for('seller_new_collection') }}" class="btn btn-sm btn-success">+ Nuevo Cobro</a>
+            </div>
+            <div class="card-body">
+                {% if collections_today %}
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Cliente</th>
+                            <th>Monto</th>
+                            <th>Método</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for collection in collections_today %}
+                        <tr>
+                            <td>#{{ collection.id }}</td>
+                            <td>{{ collection.customer.name }}</td>
+                            <td>C$ {{ "%.2f"|format(collection.amount) }}</td>
+                            <td>{{ collection.payment_method|title }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="text-muted text-center">No hay cobros registrados hoy</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if customers_with_balance %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Clientes con Saldo Pendiente</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Cliente</th>
+                            <th>Teléfono</th>
+                            <th>Dirección</th>
+                            <th>Saldo Pendiente</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for customer in customers_with_balance %}
+                        <tr>
+                            <td>{{ customer.name }}</td>
+                            <td>{{ customer.phone or 'N/A' }}</td>
+                            <td>{{ customer.address or 'N/A' }}</td>
+                            <td><strong class="text-danger">C$ {{ "%.2f"|format(customer.balance) }}</strong></td>
+                            <td>
+                                <a href="{{ url_for('seller_new_collection') }}" class="btn btn-sm btn-primary">Cobrar</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="alert alert-info">
+            <h6><strong>📍 Envío de Ubicación GPS</strong></h6>
+            <p class="mb-2 small">Tu ubicación se está enviando automáticamente al sistema mientras estás en jornada laboral.</p>
+            <button id="sendLocationBtn" class="btn btn-sm btn-outline-primary">Enviar ubicación ahora</button>
+            <span id="locationStatus" class="ms-2 small"></span>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Enviar ubicación GPS automáticamente cada 30 segundos
+let locationInterval;
+
+function sendLocation() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                fetch('/seller/update-location', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('locationStatus').textContent = '✅ Ubicación enviada';
+                        setTimeout(() => {
+                            document.getElementById('locationStatus').textContent = '';
+                        }, 2000);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('locationStatus').textContent = '❌ Error al enviar';
+                });
+            },
+            function(error) {
+                console.error('Error de geolocalización:', error);
+                document.getElementById('locationStatus').textContent = '❌ Error GPS';
+            },
+            { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+        );
+    } else {
+        alert('Geolocalización no soportada por este navegador');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Enviar ubicación inicial
+    sendLocation();
+    
+    // Programar envío automático cada 30 segundos
+    locationInterval = setInterval(sendLocation, 30000);
+    
+    // Botón manual
+    document.getElementById('sendLocationBtn').addEventListener('click', sendLocation);
+});
+</script>
+{% endblock %}

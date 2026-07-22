@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Admin{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2>Panel de Administrador</h2>
+        <hr>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h5 class="card-title">Recaudado Hoy</h5>
+                <h2>C$ {{ "%.2f"|format(total_today) }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h5 class="card-title">Vendedores Activos</h5>
+                <h2>{{ sellers|length }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark">
+            <div class="card-body">
+                <h5 class="card-title">Stock Bajo</h5>
+                <h2>{{ products_low_stock|length }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <h5 class="card-title">Ventas Recientes</h5>
+                <h2>{{ recent_sales|length }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if products_low_stock %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-warning">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">⚠️ Productos con Stock Bajo</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th>Stock Actual</th>
+                            <th>Stock Mínimo</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in products_low_stock %}
+                        <tr>
+                            <td>{{ product.name }}</td>
+                            <td>{{ product.stock }}</td>
+                            <td>{{ product.min_stock }}</td>
+                            <td>
+                                <a href="{{ url_for('admin_edit_product', id=product.id) }}" class="btn btn-sm btn-primary">Reponer</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Últimas Ventas</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Cliente</th>
+                            <th>Vendedor</th>
+                            <th>Total</th>
+                            <th>Tipo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sale in recent_sales %}
+                        <tr>
+                            <td>#{{ sale.id }}</td>
+                            <td>{{ sale.customer.name }}</td>
+                            <td>{{ sale.seller.username }}</td>
+                            <td>C$ {{ "%.2f"|format(sale.total) }}</td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if sale.sale_type == 'contado' else 'warning' }}">
+                                    {{ sale.sale_type|title }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Últimos Cobros</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Cliente</th>
+                            <th>Cobrador</th>
+                            <th>Monto</th>
+                            <th>Método</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for collection in recent_collections %}
+                        <tr>
+                            <td>#{{ collection.id }}</td>
+                            <td>{{ collection.customer.name }}</td>
+                            <td>{{ collection.collector.username }}</td>
+                            <td>C$ {{ "%.2f"|format(collection.amount) }}</td>
+                            <td>{{ collection.payment_method|title }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <a href="{{ url_for('admin_map') }}" class="btn btn-lg btn-primary">
+            🗺️ Ver Mapa GPS en Tiempo Real
+        </a>
+    </div>
+</div>
+{% endblock %}

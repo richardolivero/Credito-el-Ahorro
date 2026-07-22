@@ -1,0 +1,287 @@
+{% extends "base.html" %}
+
+{% block title %}Nueva Venta{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2>📝 Registrar Nueva Venta</h2>
+        <hr>
+    </div>
+</div>
+
+<form method="POST" id="saleForm">
+    <input type="hidden" id="latitude" name="latitude">
+    <input type="hidden" id="longitude" name="longitude">
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Información del Cliente</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="customer_id" class="form-label">Cliente *</label>
+                        <select class="form-select" id="customer_id" name="customer_id" required>
+                            <option value="">Seleccione un cliente...</option>
+                            {% for customer in customers %}
+                            <option value="{{ customer.id }}" data-discount="{{ customer.discount_percent }}">
+                                {{ customer.name }} 
+                                {% if customer.discount_percent > 0 %}(Descuento: {{ customer.discount_percent }}%){% endif %}
+                                {% if customer.balance > 0 %} - Saldo pendiente: C$ {{ "%.2f"|format(customer.balance) }}{% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="sale_type" class="form-label">Tipo de Venta *</label>
+                        <select class="form-select" id="sale_type" name="sale_type" required>
+                            <option value="contado">Contado</option>
+                            <option value="credito">Crédito</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Descuentos</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Descuento del Cliente</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="customerDiscount" value="0%" readonly>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="manual_discount" class="form-label">Descuento Adicional (%)</label>
+                        <input type="number" class="form-control" id="manual_discount" name="manual_discount" 
+                               min="0" max="100" step="0.1" value="0">
+                        <small class="form-text text-muted">Descuento especial aprobado por administrador</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Productos</h5>
+            <button type="button" class="btn btn-sm btn-success" onclick="addProductRow()">+ Agregar Producto</button>
+        </div>
+        <div class="card-body">
+            <table class="table" id="productsTable">
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th style="width: 120px;">Precio Unit.</th>
+                        <th style="width: 100px;">Cantidad</th>
+                        <th style="width: 120px;">Subtotal</th>
+                        <th style="width: 50px;"></th>
+                    </tr>
+                </thead>
+                <tbody id="productRows">
+                </tbody>
+            </table>
+            
+            <div id="noProducts" class="text-center text-muted py-4">
+                No hay productos agregados. Haz clic en "+ Agregar Producto"
+            </div>
+        </div>
+    </div>
+    
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Resumen</h5>
+                    <table class="table table-sm">
+                        <tr>
+                            <td>Subtotal:</td>
+                            <td class="text-end"><strong id="subtotalDisplay">C$ 0.00</strong></td>
+                        </tr>
+                        <tr>
+                            <td>Descuento Total:</td>
+                            <td class="text-end text-danger"><strong id="discountDisplay">C$ 0.00</strong></td>
+                        </tr>
+                        <tr class="table-primary">
+                            <td><strong>TOTAL:</strong></td>
+                            <td class="text-end"><strong id="totalDisplay">C$ 0.00</strong></td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <div id="locationInfo" class="alert alert-info">
+                        <strong>📍 Ubicación GPS:</strong>
+                        <span id="gpsStatus">Obteniendo ubicación...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+        <a href="{{ url_for('seller_dashboard') }}" class="btn btn-secondary">Cancelar</a>
+        <button type="submit" class="btn btn-primary btn-lg">✅ Registrar Venta</button>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const products = {{ products|tojson }};
+let productRows = [];
+
+// Obtener ubicación GPS al cargar
+function getLocation() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                document.getElementById('latitude').value = position.coords.latitude;
+                document.getElementById('longitude').value = position.coords.longitude;
+                document.getElementById('gpsStatus').innerHTML = 
+                    `Lat: ${position.coords.latitude.toFixed(4)}, Lng: ${position.coords.longitude.toFixed(4)}`;
+            },
+            function(error) {
+                document.getElementById('gpsStatus').textContent = '❌ Error obteniendo ubicación';
+                console.error('Error GPS:', error);
+            },
+            { enableHighAccuracy: true, timeout: 5000 }
+        );
+    } else {
+        document.getElementById('gpsStatus').textContent = '❌ Geolocalización no soportada';
+    }
+}
+
+// Actualizar descuento del cliente
+document.getElementById('customer_id').addEventListener('change', function() {
+    const option = this.options[this.selectedIndex];
+    const discount = option.dataset.discount || 0;
+    document.getElementById('customerDiscount').value = discount + '%';
+    calculateTotals();
+});
+
+document.getElementById('manual_discount').addEventListener('input', calculateTotals);
+
+function addProductRow() {
+    const tbody = document.getElementById('productRows');
+    const rowId = Date.now();
+    
+    let optionsHtml = '<option value="">Seleccione producto...</option>';
+    products.forEach(p => {
+        optionsHtml += `<option value="${p.id}" data-price="${p.price}" data-stock="${p.stock}">${p.name} (Stock: ${p.stock})</option>`;
+    });
+    
+    const row = document.createElement('tr');
+    row.id = `row-${rowId}`;
+    row.innerHTML = `
+        <td>
+            <select class="form-select product-select" onchange="updateRow(${rowId})" required>
+                ${optionsHtml}
+            </select>
+        </td>
+        <td>
+            <input type="text" class="form-control unit-price" readonly value="0.00">
+        </td>
+        <td>
+            <input type="number" class="form-control quantity" min="1" value="1" onchange="updateRow(${rowId})" required>
+        </td>
+        <td>
+            <span class="subtotal">C$ 0.00</span>
+        </td>
+        <td>
+            <button type="button" class="btn btn-sm btn-danger" onclick="removeRow(${rowId})">×</button>
+        </td>
+    `;
+    
+    tbody.appendChild(row);
+    document.getElementById('noProducts').style.display = 'none';
+}
+
+function updateRow(rowId) {
+    const row = document.getElementById(`row-${rowId}`);
+    const select = row.querySelector('.product-select');
+    const option = select.options[select.selectedIndex];
+    const price = parseFloat(option.dataset.price) || 0;
+    const quantity = parseInt(row.querySelector('.quantity').value) || 0;
+    
+    row.querySelector('.unit-price').value = price.toFixed(2);
+    row.querySelector('.subtotal').textContent = `C$ ${(price * quantity).toFixed(2)}`;
+    
+    calculateTotals();
+}
+
+function removeRow(rowId) {
+    const row = document.getElementById(`row-${rowId}`);
+    row.remove();
+    
+    if (document.querySelectorAll('#productRows tr').length === 0) {
+        document.getElementById('noProducts').style.display = 'block';
+    }
+    
+    calculateTotals();
+}
+
+function calculateTotals() {
+    let subtotal = 0;
+    
+    document.querySelectorAll('#productRows tr').forEach(row => {
+        const select = row.querySelector('.product-select');
+        const option = select.options[select.selectedIndex];
+        const price = parseFloat(option.dataset.price) || 0;
+        const quantity = parseInt(row.querySelector('.quantity').value) || 0;
+        subtotal += price * quantity;
+    });
+    
+    // Calcular descuentos
+    const customerSelect = document.getElementById('customer_id');
+    const customerOption = customerSelect.options[customerSelect.selectedIndex];
+    const customerDiscount = parseFloat(customerOption.dataset.discount) || 0;
+    const manualDiscount = parseFloat(document.getElementById('manual_discount').value) || 0;
+    const totalDiscountPercent = Math.min(customerDiscount + manualDiscount, 100);
+    
+    const discountAmount = subtotal * (totalDiscountPercent / 100);
+    const total = subtotal - discountAmount;
+    
+    document.getElementById('subtotalDisplay').textContent = `C$ ${subtotal.toFixed(2)}`;
+    document.getElementById('discountDisplay').textContent = `C$ ${discountAmount.toFixed(2)}`;
+    document.getElementById('totalDisplay').textContent = `C$ ${total.toFixed(2)}`;
+}
+
+// Enviar formulario
+document.getElementById('saleForm').addEventListener('submit', function(e) {
+    const rows = document.querySelectorAll('#productRows tr');
+    if (rows.length === 0) {
+        e.preventDefault();
+        alert('Debe agregar al menos un producto');
+        return;
+    }
+    
+    // Agregar campos ocultos para los productos
+    rows.forEach(row => {
+        const select = row.querySelector('.product-select');
+        const quantity = row.querySelector('.quantity');
+        
+        const productIdInput = document.createElement('input');
+        productIdInput.type = 'hidden';
+        productIdInput.name = 'product_id[]';
+        productIdInput.value = select.value;
+        this.appendChild(productIdInput);
+        
+        const quantityInput = document.createElement('input');
+        quantityInput.type = 'hidden';
+        quantityInput.name = 'quantity[]';
+        quantityInput.value = quantity.value;
+        this.appendChild(quantityInput);
+    });
+});
+
+// Inicializar
+getLocation();
+</script>
+{% endblock %}

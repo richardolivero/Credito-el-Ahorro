@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Editar' if customer else 'Nuevo' }} Cliente{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <h2>{{ '✏️ Editar' if customer else '➕ Nuevo' }} Cliente</h2>
+        <hr>
+        
+        <form method="POST">
+            <div class="mb-3">
+                <label for="name" class="form-label">Nombre Completo *</label>
+                <input type="text" class="form-control" id="name" name="name" 
+                       value="{{ customer.name if customer else '' }}" required>
+            </div>
+            
+            <div class="mb-3">
+                <label for="phone" class="form-label">Teléfono</label>
+                <input type="text" class="form-control" id="phone" name="phone" 
+                       value="{{ customer.phone if customer else '' }}">
+            </div>
+            
+            <div class="mb-3">
+                <label for="address" class="form-label">Dirección</label>
+                <textarea class="form-control" id="address" name="address" rows="2">{{ customer.address if customer else '' }}</textarea>
+            </div>
+            
+            <div class="mb-3">
+                <label for="discount_percent" class="form-label">Descuento Especial (%)</label>
+                <input type="number" class="form-control" id="discount_percent" name="discount_percent" 
+                       min="0" max="100" step="0.1" value="{{ customer.discount_percent if customer else '0' }}">
+                <small class="form-text text-muted">Descuento automático para clientes frecuentes</small>
+            </div>
+            
+            {% if customer and customer.balance > 0 %}
+            <div class="alert alert-warning">
+                <strong>⚠️ Saldo Pendiente:</strong> C$ {{ "%.2f"|format(customer.balance) }}
+            </div>
+            {% endif %}
+            
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <a href="{{ url_for('admin_customers') }}" class="btn btn-secondary">Cancelar</a>
+                <button type="submit" class="btn btn-primary">{{ 'Guardar Cambios' if customer else 'Crear Cliente' }}</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block title %}Reportes{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2>📊 Reportes y Exportación</h2>
+        <hr>
+    </div>
+</div>
+
+<form method="GET" class="row g-3 mb-4 align-items-end">
+    <div class="col-md-3">
+        <label for="type" class="form-label">Tipo de Reporte</label>
+        <select class="form-select" id="type" name="type">
+            <option value="sales" {{ 'selected' if report_type == 'sales' }}>Ventas</option>
+            <option value="collections" {{ 'selected' if report_type == 'collections' }}>Cobros</option>
+            <option value="inventory" {{ 'selected' if report_type == 'inventory' }}>Inventario</option>
+            <option value="commissions" {{ 'selected' if report_type == 'commissions' }}>Comisiones</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <label for="start_date" class="form-label">Fecha Inicio</label>
+        <input type="date" class="form-control" id="start_date" name="start_date" value="{{ start_date or '' }}">
+    </div>
+    <div class="col-md-2">
+        <label for="end_date" class="form-label">Fecha Fin</label>
+        <input type="date" class="form-control" id="end_date" name="end_date" value="{{ end_date or '' }}">
+    </div>
+    <div class="col-md-2">
+        <button type="submit" class="btn btn-primary w-100">🔍 Ver</button>
+    </div>
+    <div class="col-md-2">
+        <a href="{{ url_for('admin_export', report_type=report_type, start_date=start_date, end_date=end_date) }}" 
+           class="btn btn-success w-100">📥 Exportar CSV</a>
+    </div>
+</form>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">
+            {% if report_type == 'sales' %}Reporte de Ventas
+            {% elif report_type == 'collections' %}Reporte de Cobros
+            {% elif report_type == 'inventory' %}Reporte de Inventario
+            {% elif report_type == 'commissions' %}Reporte de Comisiones
+            {% endif %}
+        </h5>
+    </div>
+    <div class="card-body">
+        {% if report_type == 'sales' %}
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Fecha</th>
+                    <th>Cliente</th>
+                    <th>Vendedor</th>
+                    <th>Tipo</th>
+                    <th>Subtotal</th>
+                    <th>Descuento</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in data %}
+                <tr>
+                    <td>#{{ item.id }}</td>
+                    <td>{{ item.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                    <td>{{ item.customer.name }}</td>
+                    <td>{{ item.seller.username }}</td>
+                    <td>{{ item.sale_type|title }}</td>
+                    <td>C$ {{ "%.2f"|format(item.subtotal) }}</td>
+                    <td>{{ "%.1f"|format(item.discount) }}%</td>
+                    <td><strong>C$ {{ "%.2f"|format(item.total) }}</strong></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        {% elif report_type == 'collections' %}
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Fecha</th>
+                    <th>Cliente</th>
+                    <th>Cobrador</th>
+                    <th>Monto</th>
+                    <th>Método</th>
+                    <th>Notas</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in data %}
+                <tr>
+                    <td>#{{ item.id }}</td>
+                    <td>{{ item.collection_date.strftime('%d/%m/%Y %H:%M') }}</td>
+                    <td>{{ item.customer.name }}</td>
+                    <td>{{ item.collector.username }}</td>
+                    <td><strong>C$ {{ "%.2f"|format(item.amount) }}</strong></td>
+                    <td>{{ item.payment_method|title }}</td>
+                    <td>{{ item.notes or '-' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        {% elif report_type == 'inventory' %}
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Producto</th>
+                    <th>Costo</th>
+                    <th>Precio Venta</th>
+                    <th>Stock</th>
+                    <th>Mínimo</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in data %}
+                <tr>
+                    <td>#{{ item.id }}</td>
+                    <td>{{ item.name }}</td>
+                    <td>C$ {{ "%.2f"|format(item.cost) }}</td>
+                    <td><strong>C$ {{ "%.2f"|format(item.price) }}</strong></td>
+                    <td>
+                        {% if item.stock <= item.min_stock %}
+                        <span class="text-danger fw-bold">{{ item.stock }}</span>
+                        {% else %}
+                        {{ item.stock }}
+                        {% endif %}
+                    </td>
+                    <td>{{ item.min_stock }}</td>
+                    <td>
+                        {% if item.stock <= item.min_stock %}
+                        <span class="badge bg-danger">Bajo</span>
+                        {% else %}
+                        <span class="badge bg-success">OK</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        {% elif report_type == 'commissions' %}
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Vendedor</th>
+                    <th>Tipo Vehículo</th>
+                    <th>Recaudado</th>
+                    <th>Comisión (%)</th>
+                    <th>Comisión a Pagar</th>
+                    <th>Aguinaldo Acumulado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in data %}
+                <tr>
+                    <td>{{ item.seller.username }}</td>
+                    <td>
+                        {% if item.seller.vehicle_type == 'propio' %}
+                        <span class="badge bg-success">Propio (30%)</span>
+                        {% else %}
+                        <span class="badge bg-primary">Empresa (15%)</span>
+                        {% endif %}
+                    </td>
+                    <td><strong>C$ {{ "%.2f"|format(item.revenue) }}</strong></td>
+                    <td>{{ (item.seller.vehicle_type == 'propio' and '30%' or '15%') }}</td>
+                    <td><strong class="text-success">C$ {{ "%.2f"|format(item.commission) }}</strong></td>
+                    <td><strong class="text-warning">C$ {{ "%.2f"|format(item.bonus) }}</strong></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+        
+        {% if not data %}
+        <p class="text-muted text-center py-4">No hay datos para mostrar en este período</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

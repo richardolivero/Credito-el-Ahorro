@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}Nuevo Cobro{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2>💰 Registrar Nuevo Cobro</h2>
+        <hr>
+    </div>
+</div>
+
+<form method="POST">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Información del Cobro</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="customer_id" class="form-label">Cliente *</label>
+                        <select class="form-select" id="customer_id" name="customer_id" required onchange="updateCustomerInfo()">
+                            <option value="">Seleccione un cliente...</option>
+                            {% for customer in customers_with_balance %}
+                            <option value="{{ customer.id }}" data-balance="{{ customer.balance }}">
+                                {{ customer.name }} - Saldo pendiente: C$ {{ "%.2f"|format(customer.balance) }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="sale_id" class="form-label">Venta Relacionada (Opcional)</label>
+                        <select class="form-select" id="sale_id" name="sale_id">
+                            <option value="">Seleccione una venta...</option>
+                            <!-- Se llenará dinámicamente con JavaScript -->
+                        </select>
+                        <small class="form-text text-muted">Selecciona si el cobro corresponde a una venta específica</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="amount" class="form-label">Monto a Cobrar *</label>
+                        <div class="input-group">
+                            <span class="input-group-text">C$</span>
+                            <input type="number" class="form-control" id="amount" name="amount" 
+                                   step="0.01" min="0.01" required>
+                        </div>
+                        <small class="form-text text-muted">
+                            Saldo disponible: <strong id="availableBalance">C$ 0.00</strong>
+                        </small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="payment_method" class="form-label">Método de Pago *</label>
+                        <select class="form-select" id="payment_method" name="payment_method" required>
+                            <option value="efectivo">Efectivo</option>
+                            <option value="transferencia">Transferencia Bancaria</option>
+                            <option value="tarjeta">Tarjeta de Crédito/Débito</option>
+                            <option value="cheque">Cheque</option>
+                            <option value="otro">Otro</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notas (Opcional)</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3" 
+                                  placeholder="Agregar notas adicionales sobre el cobro..."></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card mb-3">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Resumen</h5>
+                </div>
+                <div class="card-body">
+                    <div id="customerInfo" class="text-muted text-center py-3">
+                        Seleccione un cliente para ver la información
+                    </div>
+                </div>
+            </div>
+            
+            <div class="alert alert-warning">
+                <strong>⚠️ Importante:</strong>
+                <p class="mb-0 small">Este cobro se incluirá en el cálculo de su comisión del día.</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+        <a href="{{ url_for('seller_dashboard') }}" class="btn btn-secondary">Cancelar</a>
+        <button type="submit" class="btn btn-success btn-lg">✅ Registrar Cobro</button>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function updateCustomerInfo() {
+    const select = document.getElementById('customer_id');
+    const option = select.options[select.selectedIndex];
+    const balance = parseFloat(option.dataset.balance) || 0;
+    
+    const customerInfo = document.getElementById('customerInfo');
+    const availableBalance = document.getElementById('availableBalance');
+    const amountInput = document.getElementById('amount');
+    
+    if (select.value) {
+        customerInfo.innerHTML = `
+            <h6>${option.text.split(' - ')[0]}</h6>
+            <p class="mb-1"><strong>Saldo Pendiente:</strong></p>
+            <h3 class="text-danger">C$ ${balance.toFixed(2)}</h3>
+        `;
+        availableBalance.textContent = `C$ ${balance.toFixed(2)}`;
+        amountInput.max = balance;
+        amountInput.value = '';
+    } else {
+        customerInfo.textContent = 'Seleccione un cliente para ver la información';
+        availableBalance.textContent = 'C$ 0.00';
+        amountInput.value = '';
+    }
+}
+
+// Validar que el monto no exceda el saldo
+document.getElementById('amount').addEventListener('input', function() {
+    const select = document.getElementById('customer_id');
+    const option = select.options[select.selectedIndex];
+    const balance = parseFloat(option.dataset.balance) || 0;
+    const amount = parseFloat(this.value) || 0;
+    
+    if (amount > balance) {
+        this.setCustomValidity('El monto no puede exceder el saldo pendiente del cliente');
+    } else {
+        this.setCustomValidity('');
+    }
+});
+</script>
+{% endblock %}

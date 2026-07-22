@@ -1,0 +1,37 @@
+body {
+    background-color: #f8f9fa;
+}
+
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.table th {
+    font-weight: 600;
+}
+
+.navbar-brand {
+    font-weight: bold;
+}
+
+/* Estilos para el mapa */
+.custom-marker {
+    background: transparent;
+    border: none;
+}
+
+/* Responsive para móviles */
+@media (max-width: 768px) {
+    .card-body {
+        padding: 1rem;
+    }
+    
+    table {
+        font-size: 0.875rem;
+    }
+    
+    .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+    }
+}
