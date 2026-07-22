@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}Mis Comisiones{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2>💰 Mis Comisiones y Aguinaldo</h2>
+        <hr>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h5 class="card-title">Recaudado Hoy</h5>
+                <h2>C$ {{ "%.2f"|format(daily_revenue) }}</h2>
+                <small>Ventas al contado + Cobros de crédito</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h5 class="card-title">Comisión del Día</h5>
+                <h2>C$ {{ "%.2f"|format(daily_commission) }}</h2>
+                <small>{{ (current_user.vehicle_type == 'propio' and '30%' or '15%') }} de lo recaudado</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <h5 class="card-title">Aguinaldo (Hoy)</h5>
+                <h2>C$ {{ "%.2f"|format(daily_bonus) }}</h2>
+                <small>1% de la comisión</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark">
+            <div class="card-body">
+                <h5 class="card-title">Aguinaldo Acumulado</h5>
+                <h2>C$ {{ "%.2f"|format(total_bonus) }}</h2>
+                <small>Total histórico</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="alert alert-info">
+    <h6><strong>📊 ¿Cómo se calcula mi comisión?</strong></h6>
+    <ul class="mb-0">
+        <li><strong>Vehículo Propio:</strong> 30% sobre lo recaudado en el día (ventas al contado + cobros de crédito)</li>
+        <li><strong>Vehículo de la Empresa:</strong> 15% sobre lo recaudado en el día</li>
+        <li><strong>Aguinaldo:</strong> 1% adicional de tu comisión base se acumula automáticamente</li>
+    </ul>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Historial de Ventas</h5>
+            </div>
+            <div class="card-body">
+                {% if sales %}
+                <table class="table table-sm table-striped">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Cliente</th>
+                            <th>Tipo</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sale in sales %}
+                        <tr>
+                            <td>{{ sale.created_at.strftime('%d/%m/%Y') }}</td>
+                            <td>{{ sale.customer.name }}</td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if sale.sale_type == 'contado' else 'warning' }}">
+                                    {{ sale.sale_type|title }}
+                                </span>
+                            </td>
+                            <td>C$ {{ "%.2f"|format(sale.total) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="text-muted text-center">No hay ventas registradas</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Historial de Cobros</h5>
+            </div>
+            <div class="card-body">
+                {% if collections %}
+                <table class="table table-sm table-striped">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Cliente</th>
+                            <th>Monto</th>
+                            <th>Método</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for collection in collections %}
+                        <tr>
+                            <td>{{ collection.collection_date.strftime('%d/%m/%Y') }}</td>
+                            <td>{{ collection.customer.name }}</td>
+                            <td>C$ {{ "%.2f"|format(collection.amount) }}</td>
+                            <td>{{ collection.payment_method|title }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="text-muted text-center">No hay cobros registrados</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

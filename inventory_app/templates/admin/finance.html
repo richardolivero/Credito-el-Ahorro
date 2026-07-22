@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}Finanzas{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2>💰 Finanzas y Balance</h2>
+        <hr>
+    </div>
+</div>
+
+<form method="GET" class="row g-3 mb-4 align-items-end">
+    <div class="col-md-3">
+        <label for="start_date" class="form-label">Fecha Inicio</label>
+        <input type="date" class="form-control" id="start_date" name="start_date" value="{{ start_date or '' }}">
+    </div>
+    <div class="col-md-3">
+        <label for="end_date" class="form-label">Fecha Fin</label>
+        <input type="date" class="form-control" id="end_date" name="end_date" value="{{ end_date or '' }}">
+    </div>
+    <div class="col-md-3">
+        <button type="submit" class="btn btn-primary w-100">🔍 Filtrar</button>
+    </div>
+    <div class="col-md-3">
+        <a href="{{ url_for('admin_finance') }}" class="btn btn-secondary w-100">Limpiar Filtros</a>
+    </div>
+</form>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h5 class="card-title">Ventas al Contado</h5>
+                <h3>C$ {{ "%.2f"|format(total_sales) }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <h5 class="card-title">Cobros de Crédito</h5>
+                <h3>C$ {{ "%.2f"|format(total_collections) }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h5 class="card-title">Total Ingresos</h5>
+                <h3>C$ {{ "%.2f"|format(total_income) }}</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Comisiones a Pagar</h5>
+    </div>
+    <div class="card-body">
+        <p><strong>Total Comisiones Estimadas:</strong> C$ {{ "%.2f"|format(total_commissions) }}</p>
+        <small class="text-muted">Las comisiones se calculan sobre lo recaudado (ventas al contado + cobros) según el tipo de vehículo de cada vendedor.</small>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Ventas del Período</h5>
+            </div>
+            <div class="card-body">
+                {% if sales %}
+                <table class="table table-sm table-striped">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Vendedor</th>
+                            <th>Cliente</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sale in sales %}
+                        <tr>
+                            <td>{{ sale.created_at.strftime('%d/%m/%Y') }}</td>
+                            <td>{{ sale.seller.username }}</td>
+                            <td>{{ sale.customer.name }}</td>
+                            <td>C$ {{ "%.2f"|format(sale.total) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="text-muted text-center">No hay ventas en este período</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Cobros del Período</h5>
+            </div>
+            <div class="card-body">
+                {% if collections %}
+                <table class="table table-sm table-striped">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Cobrador</th>
+                            <th>Cliente</th>
+                            <th>Monto</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for collection in collections %}
+                        <tr>
+                            <td>{{ collection.collection_date.strftime('%d/%m/%Y') }}</td>
+                            <td>{{ collection.collector.username }}</td>
+                            <td>{{ collection.customer.name }}</td>
+                            <td>C$ {{ "%.2f"|format(collection.amount) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="text-muted text-center">No hay cobros en este período</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

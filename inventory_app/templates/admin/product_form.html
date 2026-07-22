@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Editar' if product else 'Nuevo' }} Producto{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <h2>{{ '✏️ Editar' if product else '➕ Nuevo' }} Producto</h2>
+        <hr>
+        
+        <form method="POST">
+            <div class="mb-3">
+                <label for="name" class="form-label">Nombre del Producto *</label>
+                <input type="text" class="form-control" id="name" name="name" 
+                       value="{{ product.name if product else '' }}" required>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="cost" class="form-label">Costo Unitario *</label>
+                        <div class="input-group">
+                            <span class="input-group-text">C$</span>
+                            <input type="number" class="form-control" id="cost" name="cost" 
+                                   step="0.01" min="0" value="{{ product.cost if product else '' }}" required>
+                        </div>
+                        <small class="form-text text-muted">El precio de venta se calculará automáticamente (costo x 3)</small>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Precio de Venta (3x1)</label>
+                        <div class="input-group">
+                            <span class="input-group-text">C$</span>
+                            <input type="text" class="form-control" id="priceDisplay" readonly>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="stock" class="form-label">Stock Actual *</label>
+                        <input type="number" class="form-control" id="stock" name="stock" 
+                               min="0" value="{{ product.stock if product else '0' }}">
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="min_stock" class="form-label">Stock Mínimo *</label>
+                        <input type="number" class="form-control" id="min_stock" name="min_stock" 
+                               min="1" value="{{ product.min_stock if product else '10' }}">
+                        <small class="form-text text-muted">Alerta cuando el stock llegue a este nivel</small>
+                    </div>
+                </div>
+            </div>
+            
+            {% if product %}
+            <div class="alert alert-info">
+                <strong>ℹ️ Información:</strong>
+                <ul class="mb-0 mt-1">
+                    <li>Precio actual: C$ {{ "%.2f"|format(product.price) }}</li>
+                    <li>Movimientos de inventario registrados: {{ product.inventory_movements|length }}</li>
+                </ul>
+            </div>
+            {% endif %}
+            
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <a href="{{ url_for('admin_products') }}" class="btn btn-secondary">Cancelar</a>
+                <button type="submit" class="btn btn-primary">{{ 'Guardar Cambios' if product else 'Crear Producto' }}</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Calcular precio de venta automáticamente (regla 3x1)
+document.getElementById('cost').addEventListener('input', function() {
+    const cost = parseFloat(this.value) || 0;
+    document.getElementById('priceDisplay').value = (cost * 3).toFixed(2);
+});
+
+// Inicializar display si hay un valor existente
+const costInput = document.getElementById('cost');
+if (costInput.value) {
+    const cost = parseFloat(costInput.value);
+    document.getElementById('priceDisplay').value = (cost * 3).toFixed(2);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,45 @@
+```
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+
+# Database
+*.db
+
+# Environment
+.env
+.env.local
+.env.*
+
+# Dependencies
+.venv/
+venv/
+node_modules/
+
+# Editors
+.vscode/
+.idea/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# Coverage
+.coverage
+coverage/
+htmlcov/
+
+# OS
+.DS_Store
+Thumbs.db
+```

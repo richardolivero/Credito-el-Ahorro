@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Vendedores{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 d-flex justify-content-between align-items-center">
+        <h2>👥 Gestión de Vendedores</h2>
+        <a href="{{ url_for('admin_add_seller') }}" class="btn btn-primary">+ Nuevo Vendedor</a>
+    </div>
+    <hr class="w-100">
+</div>
+
+<table class="table table-striped table-hover">
+    <thead class="table-dark">
+        <tr>
+            <th>ID</th>
+            <th>Usuario</th>
+            <th>Tipo Vehículo</th>
+            <th>Estado</th>
+            <th>Recaudado Hoy</th>
+            <th>Comisión Hoy</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for seller in sellers %}
+        <tr>
+            <td>{{ seller.id }}</td>
+            <td>{{ seller.username }}</td>
+            <td>
+                {% if seller.vehicle_type == 'propio' %}
+                <span class="badge bg-success">Propio (30%)</span>
+                {% else %}
+                <span class="badge bg-primary">Empresa (15%)</span>
+                {% endif %}
+            </td>
+            <td>
+                {% if seller.active %}
+                <span class="badge bg-success">Activo</span>
+                {% else %}
+                <span class="badge bg-danger">Inactivo</span>
+                {% endif %}
+            </td>
+            <td>C$ {{ "%.2f"|format(seller.daily_revenue) }}</td>
+            <td>C$ {{ "%.2f"|format(seller.daily_commission) }}</td>
+            <td>
+                <a href="{{ url_for('admin_edit_seller', id=seller.id) }}" class="btn btn-sm btn-warning">Editar</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

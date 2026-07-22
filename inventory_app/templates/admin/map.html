@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block title %}Mapa GPS - Admin{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2>🗺️ Mapa de Vendedores en Tiempo Real</h2>
+        <hr>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-12">
+        <button id="refreshBtn" class="btn btn-primary" onclick="loadSellerLocations()">
+            🔄 Actualizar Ubicaciones
+        </button>
+        <span class="ms-2 text-muted">Última actualización: <span id="lastUpdate">-</span></span>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div id="map" style="height: 500px;"></div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Vendedores Activos</h5>
+            </div>
+            <div class="card-body p-0">
+                <div id="sellersList" class="list-group list-group-flush">
+                    <div class="text-center p-3">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">Leyenda</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                    <li><span style="color: #28a745;">●</span> Vehículo Propio (30% comisión)</li>
+                    <li><span style="color: #007bff;">●</span> Vehículo Empresa (15% comisión)</li>
+                    <li><span style="color: #ffc107;">●</span> Sin ubicación reciente</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let map;
+let markers = {};
+let sellerData = [];
+
+// Inicializar mapa centrado en Nicaragua
+function initMap() {
+    map = L.map('map').setView([12.865, -85.207], 7); // Centro de Nicaragua
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+    
+    loadSellerLocations();
+    // Auto-refresh cada 30 segundos
+    setInterval(loadSellerLocations, 30000);
+}
+
+function loadSellerLocations() {
+    fetch('/api/sellers/locations')
+        .then(response => response.json())
+        .then(data => {
+            sellerData = data;
+            updateMarkers(data);
+            updateSellersList(data);
+            document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+        })
+        .catch(error => {
+            console.error('Error cargando ubicaciones:', error);
+            document.getElementById('sellersList').innerHTML = `
+                <div class="alert alert-danger m-3">Error cargando ubicaciones</div>
+            `;
+        });
+}
+
+function updateMarkers(data) {
+    // Eliminar marcadores antiguos que ya no existen
+    Object.keys(markers).forEach(id => {
+        if (!data.find(s => s.id == id)) {
+            map.removeLayer(markers[id]);
+            delete markers[id];
+        }
+    });
+    
+    // Actualizar o crear nuevos marcadores
+    data.forEach(seller => {
+        if (seller.latitude && seller.longitude) {
+            const markerColor = seller.vehicle_type === 'propio' ? '#28a745' : '#007bff';
+            
+            // Icono personalizado
+            const icon = L.divIcon({
+                className: 'custom-marker',
+                html: `<div style="background-color: ${markerColor}; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"></div>`,
+                iconSize: [20, 20],
+                iconAnchor: [10, 10]
+            });
+            
+            if (markers[seller.id]) {
+                // Actualizar marcador existente
+                markers[seller.id].setLatLng([seller.latitude, seller.longitude]);
+                markers[seller.id].setPopupContent(createPopupContent(seller));
+            } else {
+                // Crear nuevo marcador
+                markers[seller.id] = L.marker([seller.latitude, seller.longitude], {icon: icon})
+                    .addTo(map)
+                    .bindPopup(createPopupContent(seller));
+            }
+        }
+    });
+}
+
+function createPopupContent(seller) {
+    return `
+        <div style="min-width: 200px;">
+            <h6 style="margin-bottom: 10px;">${seller.username}</h6>
+            <p style="margin: 5px 0;"><strong>Vehículo:</strong> ${seller.vehicle_type === 'propio' ? 'Propio' : 'Empresa'}</p>
+            <p style="margin: 5px 0;"><strong>Recaudado hoy:</strong> C$ ${seller.daily_revenue.toFixed(2)}</p>
+            <p style="margin: 5px 0;"><strong>Comisión:</strong> C$ ${seller.daily_commission.toFixed(2)}</p>
+            <p style="margin: 5px 0; font-size: 12px; color: #666;">Actualizado: ${seller.timestamp ? new Date(seller.timestamp).toLocaleString() : 'Sin datos'}</p>
+        </div>
+    `;
+}
+
+function updateSellersList(data) {
+    const container = document.getElementById('sellersList');
+    
+    if (data.length === 0) {
+        container.innerHTML = '<div class="p-3 text-muted">No hay vendedores activos</div>';
+        return;
+    }
+    
+    container.innerHTML = data.map(seller => {
+        const hasLocation = seller.latitude && seller.longitude;
+        const statusClass = hasLocation ? 'list-group-item-action' : '';
+        const statusText = hasLocation ? 'En ruta' : 'Sin ubicación';
+        const vehicleBadge = seller.vehicle_type === 'propio' 
+            ? '<span class="badge bg-success">Propio</span>' 
+            : '<span class="badge bg-primary">Empresa</span>';
+        
+        return `
+            <div class="list-group-item ${statusClass}" onclick="${hasLocation ? `focusMarker(${seller.id})` : ''}">
+                <div class="d-flex w-100 justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1">${seller.username}</h6>
+                        <small class="text-muted">${statusText}</small>
+                    </div>
+                    <div class="text-end">
+                        ${vehicleBadge}
+                        <div class="mt-1"><small>C$ ${seller.daily_revenue.toFixed(2)}</small></div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function focusMarker(sellerId) {
+    const seller = sellerData.find(s => s.id === sellerId);
+    if (seller && seller.latitude && seller.longitude) {
+        map.setView([seller.latitude, seller.longitude], 15);
+        markers[sellerId].openPopup();
+    }
+}
+
+document.addEventListener('DOMContentLoaded', initMap);
+</script>
+{% endblock %}

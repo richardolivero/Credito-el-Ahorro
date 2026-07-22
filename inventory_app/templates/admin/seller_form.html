@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Editar' if seller else 'Nuevo' }} Vendedor{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <h2>{{ '✏️ Editar' if seller else '➕ Nuevo' }} Vendedor</h2>
+        <hr>
+        
+        <form method="POST">
+            {% if not seller %}
+            <div class="mb-3">
+                <label for="username" class="form-label">Usuario *</label>
+                <input type="text" class="form-control" id="username" name="username" required>
+            </div>
+            
+            <div class="mb-3">
+                <label for="password" class="form-label">Contraseña *</label>
+                <input type="password" class="form-control" id="password" name="password" required>
+            </div>
+            {% else %}
+            <div class="mb-3">
+                <label for="username" class="form-label">Usuario</label>
+                <input type="text" class="form-control" value="{{ seller.username }}" readonly>
+            </div>
+            
+            <div class="mb-3">
+                <label for="password" class="form-label">Nueva Contraseña (dejar vacío para mantener la actual)</label>
+                <input type="password" class="form-control" id="password" name="password">
+            </div>
+            {% endif %}
+            
+            <div class="mb-3">
+                <label for="vehicle_type" class="form-label">Tipo de Vehículo *</label>
+                <select class="form-select" id="vehicle_type" name="vehicle_type" required>
+                    <option value="propio" {{ 'selected' if seller and seller.vehicle_type == 'propio' }}>Propio (30% comisión)</option>
+                    <option value="empresa" {{ 'selected' if seller and seller.vehicle_type == 'empresa' }}>Empresa (15% comisión)</option>
+                </select>
+                <small class="form-text text-muted">
+                    Esto determina el porcentaje de comisión que recibirá el vendedor
+                </small>
+            </div>
+            
+            {% if seller %}
+            <div class="mb-3 form-check">
+                <input type="checkbox" class="form-check-input" id="active" name="active" 
+                       {{ 'checked' if seller.active }}>
+                <label class="form-check-label" for="active">Activo</label>
+            </div>
+            {% endif %}
+            
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <a href="{{ url_for('admin_sellers') }}" class="btn btn-secondary">Cancelar</a>
+                <button type="submit" class="btn btn-primary">{{ 'Guardar Cambios' if seller else 'Crear Vendedor' }}</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
