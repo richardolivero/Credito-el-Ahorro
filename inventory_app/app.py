@@ -935,4 +935,7 @@ if __name__ == '__main__':
         db.create_all()
         create_sample_data()
     
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    # Para desarrollo local (con debug)
+    # Para producci贸n con Docker, usar gunicorn
+    app.run(debug=False, host='0.0.0.0', port=5000)
+
